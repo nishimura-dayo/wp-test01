@@ -1,0 +1,40 @@
+version: '3' # docker-composeの書式のバージョン
+
+services:
+   db: # データベースサーバ（MySql）名（任意の名前を指定可）
+     platform: linux/x86_64 # M1チップ対応のため追記
+     image: mysql:5.7 # 使用するデータベースのイメージ名とバージョン(https://hub.docker.com/_/mysql)
+     volumes:
+       - ./db/mysql:/var/lib/mysql
+       - ./db/mysql.dump.sql:/docker-entrypoint-initdb.d/install_wordpress.sql
+     restart: always # PC再起動時などDocker自体が起動したときにこのサーバも自動で起動するよう設定
+     environment: # 環境変数
+       MYSQL_ROOT_PASSWORD: somewordpress # rootユーザのパスワード（任意に指定可）
+       MYSQL_DATABASE: wordpress # WordPress用接続ユーザ名（任意に指定可）
+       MYSQL_USER: wordpress # WordPress用接続ユーザ名（任意に指定可）
+       MYSQL_PASSWORD: wordpress # WordPress用パスワード（任意に指定可）
+
+   wordpress: # アプリケーションサーバ（PHP,WordPress）名（任意の名前を指定可）
+     depends_on:
+       - db
+     image: wordpress:latest # 使用するWordPressのイメージ名とバージョン(latestは最新を表す https://hub.docker.com/_/wordpress)
+     volumes:
+       - ./wordpress/html:/var/www/html
+       - ./php/php.ini:/usr/local/etc/php/conf.d/php.ini
+      #  - ./html:/var/www/html # マウントするディレクトリを指定
+     ports:
+       - "10001:80" # アプリケーションサーバの80番ポートをローカルの10001番ポートにつなげる（http://localhost:10001 でアクセスできるようになる）
+     restart: always
+     environment:
+       WORDPRESS_DB_HOST: db:3306 # データベースサーバ名：ポート番号
+       WORDPRESS_DB_USER: wordpress # WordPress用接続ユーザ名(dbの内容に合わせる)
+       WORDPRESS_DB_PASSWORD: wordpress # WordPress用データベース名(dbの内容に合わせる)
+   phpmyadmin:
+     image: phpmyadmin/phpmyadmin:latest
+     restart: always
+     depends_on:
+     - db
+     ports:
+     - 10011:80
+volumes:
+    db_data:
